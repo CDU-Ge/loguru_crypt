@@ -11,13 +11,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
+import logging
 import pathlib
-import sys
+from logging import getLogger
 from typing import Callable
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import TextIO
 from typing import Union
 
 if TYPE_CHECKING:
@@ -25,38 +23,19 @@ if TYPE_CHECKING:
 
 
 class SimpleEncryptSink:
-    def __init__(self, logfile: Union[str, pathlib.Path, TextIO], encrypt: Callable):
-        self.logstream = None
-        self.logfile = None
-        self.logfile_stream: Optional[TextIO] = None
-        if isinstance(logfile, TextIO):
-            self.logstream = logfile
-        elif logfile in [sys.stdout, sys.stderr]:
-            self.logstream = logfile
-        else:
-            self.logfile = str(os.path.abspath(logfile))
+    def __init__(self, logfile: Union[str, pathlib.Path], encrypt: Callable):
+        self.logger = getLogger('loguru_crypt')
+        self.logger.propagate = False
+        self.logger.setLevel(logging.ERROR)
+        self.logger_file = logging.FileHandler(logfile, encoding='utf-8')
+        self.logger_file.setFormatter(logging.Formatter("%(message)s"))
+        self.logger.addHandler(self.logger_file)
         self.encrypt = encrypt
-
-    def __enter__(self):
-        self.logfile_stream = open(self.logfile, "a", encoding='utf-8')
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.logfile_stream:
-            self.logstream.close()
-            self.logstream = None
 
     def write(self, message: Union['Message', str]):
         try:
             message = self.encrypt(message)
         except Exception as e:
             raise e
-        message = f"{message}\n"
-        if self.logstream and not self.logstream.closed:
-            self.logstream.write(message)
-        if self.logfile_stream:
-            if not self.logfile_stream.closed:
-                self.logfile_stream.write(message)
-        else:
-            if self.logfile:
-                with open(self.logfile, "a", encoding="utf-8") as logfile:
-                    logfile.write(message)
+        message = f"{message}"
+        self.logger.error(message)
