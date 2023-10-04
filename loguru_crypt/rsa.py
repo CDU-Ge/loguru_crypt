@@ -120,5 +120,5 @@ class RSA:
     def decrypt_message(self, message: str) -> str:
         message = self.b64decode(message)
         message = self.decrypt(message)
-        message = message.decode(encoding='utf-8')
+        message = message.decode(encoding='utf-8', errors='replace')
         return message
