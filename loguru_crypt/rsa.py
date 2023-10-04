@@ -106,6 +106,7 @@ class RSA:
         return decrypted_message
 
     def encrypt_message(self, message: str) -> str:
+        message = f"{message}\n"
         message = message.encode(encoding='utf-8')
         if len(message) > self._chunk_size:
             message = "\n".join(map(self.b64encode, map(self.encrypt, [
